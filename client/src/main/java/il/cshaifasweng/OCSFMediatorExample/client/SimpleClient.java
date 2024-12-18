@@ -7,9 +7,10 @@ import il.cshaifasweng.OCSFMediatorExample.entities.Warning;
 
 public class SimpleClient extends AbstractClient {
     private static SimpleClient client = null;
+    SecondaryController sc;
     private SimpleClient(String host, int port) {
         super(host, port);
-        new SecondaryController();
+        sc = new SecondaryController();
     }
 
     @Override
@@ -23,23 +24,22 @@ public class SimpleClient extends AbstractClient {
                     try {
                         PrimaryController.setWaitingForPlayer(false);
                         PrimaryController.switchToSecondary();       // Switch to secondary screen
-                        EventBus.getDefault().post("StartGame");
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                 });
-            } else if (message != null && message.startsWith("update") || message.startsWith("X") || message.startsWith("O")) {
+            } else if (message != null && message.startsWith("update")) {
                 String[] splittedStr = message.split(" ");
                 int row = Integer.parseInt(splittedStr[2]);
                 int col = Integer.parseInt(splittedStr[3]);
                 EventBus.getDefault().post(new Object[] { row, col, splittedStr[4] });
+                message = splittedStr[4];
+                sc.handleMessage(message);
             } else if (message != null && message.startsWith("done")) {
-                String[] splittedStr = message.split(" ");
-                int row = Integer.parseInt(splittedStr[2]);
-                int col = Integer.parseInt(splittedStr[3]);
-//                SecondaryController.done("PLAYER "+ splittedStr[1]+ " WINNER!");
+                EventBus.getDefault().post(msg + "   bom");
             }
-            System.out.println(message);
+            sc.handleMessage(message);
+            System.out.println(message + "hahahahah");
         }
     }
 

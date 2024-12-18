@@ -5,6 +5,7 @@ import il.cshaifasweng.OCSFMediatorExample.server.ocsf.ConnectionToClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import il.cshaifasweng.OCSFMediatorExample.entities.Warning;
 import il.cshaifasweng.OCSFMediatorExample.server.ocsf.SubscribedClient;
@@ -12,16 +13,10 @@ import il.cshaifasweng.OCSFMediatorExample.server.ocsf.SubscribedClient;
 public class SimpleServer extends AbstractServer {
     private static ArrayList<SubscribedClient> SubscribersList = new ArrayList<>();
     private String[][] gameBoard = new String[3][3];
-    private String player;
     private boolean isOTurn = true;
 
     public SimpleServer(int port) {
         super(port);
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                gameBoard[i][j] = "";
-            }
-        }
     }
 
     @Override
@@ -60,40 +55,44 @@ public class SimpleServer extends AbstractServer {
             String[] splittedStr = msgString.split(" ");
             int row = Integer.parseInt(splittedStr[2]);
             int col = Integer.parseInt(splittedStr[3]);
-            if (isOTurn) {
-                if (!client.getInetAddress().equals(SubscribersList.get(0).getClient().getInetAddress())) {
-                    return;
-                }
-                player = "O";
-            } else {
-                if (!client.equals(SubscribersList.get(1).getClient())) {
-                    return;
-                }
-                player = "X";
-            }
-            if (isBoardFull()) {
-                sendToAllClients("It's a Draw!".concat(msgString).concat(player));
+            String player = isOTurn ? "O" : "X";
+            String userMsg = row + " " + col + " " + player;
+            if (!client.equals(SubscribersList.get(0).getClient()))
+                return;
+            if (gameBoard[row][col] != null)
+                return;
+            if (isFullBoard()) {
+                sendToAllClients("over" + userMsg);
                 return;
             }
-            sendToAllClients("update board " + row + " " + col + " " + player);
+            sendToAllClients("update board " + userMsg);
             gameBoard[row][col] = player;
             isOTurn = !isOTurn;
-            if (player.equals("X")) {
-                sendToAllClients("O");
-            } else {
+            if (player.equals("O")) {
                 sendToAllClients("X");
+            } else {
+                sendToAllClients("O");
             }
             if (checkWin()) {
-                sendToAllClients("done " + player + " " + row + " " + col);
-                return;
+                sendToAllClients("done" + userMsg);
+                reset();
+            }
+        }
+
+    }
+
+    private void reset() {
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                gameBoard[i][j] = "";
             }
         }
     }
 
-    private boolean isBoardFull() {
+    private boolean isFullBoard() {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                if (gameBoard[i][j].isEmpty()) {
+                if (gameBoard[i][j] == null) {
                     return false;
                 }
             }
