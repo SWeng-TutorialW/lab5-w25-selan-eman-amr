@@ -5,7 +5,6 @@ import il.cshaifasweng.OCSFMediatorExample.server.ocsf.ConnectionToClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Objects;
 
 import il.cshaifasweng.OCSFMediatorExample.entities.Warning;
 import il.cshaifasweng.OCSFMediatorExample.server.ocsf.SubscribedClient;
@@ -48,53 +47,42 @@ public class SimpleServer extends AbstractServer {
                 }
             }
         } else if (msgString.startsWith("I'm here")) {
-            if (SubscribersList.size() == 1) {
-                sendToAllClients("Start game");
+            if (SubscribersList.size() == 2) {
+                sendToAllClients("start game");
             }
-        } else if (msgString.startsWith("New Move ")) {
-            String[] splittedStr = msgString.split(" ");
-            int row = Integer.parseInt(splittedStr[2]);
-            int col = Integer.parseInt(splittedStr[3]);
-            String player = isOTurn ? "O" : "X";
-            String userMsg = row + " " + col + " " + player;
-            if (!client.equals(SubscribersList.get(0).getClient()))
-                return;
-            if (gameBoard[row][col] != null)
-                return;
-            if (isFullBoard()) {
-                sendToAllClients("over" + userMsg);
-                return;
-            }
-            sendToAllClients("update board " + userMsg);
-            gameBoard[row][col] = player;
-            isOTurn = !isOTurn;
-            if (player.equals("O")) {
-                sendToAllClients("X");
-            } else {
-                sendToAllClients("O");
-            }
-            if (checkWin()) {
-                sendToAllClients("done" + userMsg);
-                reset();
-            }
+        } else if (msgString.startsWith("new move ")) {
+            handleMove(msgString, client);
         }
-
     }
 
-    private void reset() {
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                gameBoard[i][j] = "";
-            }
+    private void handleMove(String msgString, ConnectionToClient client) {
+        String[] parts = msgString.split(" ");
+        int row = Integer.parseInt(parts[2]);
+        int col = Integer.parseInt(parts[3]);
+        String player = isOTurn ? "O" : "X";
+        String moveMsg = row + " " + col + " " + player;
+//            if ((isOTurn && !client.equals(SubscribersList.get(0).getClient()) || (!isOTurn && !client.equals(SubscribersList.get(1).getClient()))
+        if ((isOTurn && !client.getName().equals(SubscribersList.get(0).getClient().getName())) || (!isOTurn && !client.getName().equals(SubscribersList.get(1).getClient().getName())))
+            return;
+        if (gameBoard[row][col] != null)
+            return;
+        gameBoard[row][col] = player;
+        sendToAllClients("update board " + moveMsg + " turn " + (player.equals("O") ? "X" : "O"));
+        if (checkWin()) {
+            sendToAllClients("done " + moveMsg);
+            return;
         }
+        if (isFullBoard()) {
+            sendToAllClients("over " + moveMsg);
+            return;
+        }
+        isOTurn = !isOTurn;
     }
 
     private boolean isFullBoard() {
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                if (gameBoard[i][j] == null) {
-                    return false;
-                }
+        for (String[] row : gameBoard) {
+            for (String cell : row) {
+                if (cell == null) return false;
             }
         }
         return true;
@@ -102,17 +90,24 @@ public class SimpleServer extends AbstractServer {
 
     private boolean checkWin() {
         for (int i = 0; i < 3; i++) {
-            if ((gameBoard[i][0] != null && !gameBoard[i][0].isEmpty() && gameBoard[i][0].equals(gameBoard[i][1]) && gameBoard[i][1].equals(gameBoard[i][2]))) {
+            // rows
+            if (gameBoard[i][0] != null && !gameBoard[i][0].isEmpty() &&
+                    gameBoard[i][0].equals(gameBoard[i][1]) && gameBoard[i][1].equals(gameBoard[i][2])) {
                 return true;
             }
-            if (gameBoard[0][i].equals(gameBoard[1][i]) && gameBoard[1][i].equals(gameBoard[2][i])) {
+            // cols
+            if (gameBoard[0][i] != null && !gameBoard[0][i].isEmpty() &&
+                    gameBoard[0][i].equals(gameBoard[1][i]) && gameBoard[1][i].equals(gameBoard[2][i])) {
                 return true;
             }
         }
-        if (gameBoard[0][0].equals(gameBoard[1][1]) && gameBoard[1][1].equals(gameBoard[2][2])) {
+        // Check diagonals
+        if (gameBoard[0][0] != null && !gameBoard[0][0].isEmpty() &&
+                gameBoard[0][0].equals(gameBoard[1][1]) && gameBoard[1][1].equals(gameBoard[2][2])) {
             return true;
         }
-        return gameBoard[0][2].equals(gameBoard[1][1]) && gameBoard[1][1].equals(gameBoard[2][0]);
+        return (gameBoard[0][2] != null && !gameBoard[0][2].isEmpty() &&
+                gameBoard[0][2].equals(gameBoard[1][1]) && gameBoard[1][1].equals(gameBoard[2][0]));
     }
 
     public void sendToAllClients(String message) {

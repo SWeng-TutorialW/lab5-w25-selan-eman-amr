@@ -7,10 +7,9 @@ import il.cshaifasweng.OCSFMediatorExample.entities.Warning;
 
 public class SimpleClient extends AbstractClient {
     private static SimpleClient client = null;
-    SecondaryController sc;
+
     private SimpleClient(String host, int port) {
         super(host, port);
-        sc = new SecondaryController();
     }
 
     @Override
@@ -19,7 +18,7 @@ public class SimpleClient extends AbstractClient {
             EventBus.getDefault().post(new WarningEvent((Warning) msg));
         } else {
             String message = msg.toString();
-            if (message != null && message.startsWith("Start game")) {
+            if (message != null && message.startsWith("start game")) {
                 javafx.application.Platform.runLater(() -> {
                     try {
                         PrimaryController.setWaitingForPlayer(false);
@@ -32,14 +31,17 @@ public class SimpleClient extends AbstractClient {
                 String[] splittedStr = message.split(" ");
                 int row = Integer.parseInt(splittedStr[2]);
                 int col = Integer.parseInt(splittedStr[3]);
-                EventBus.getDefault().post(new Object[] { row, col, splittedStr[4] });
-                message = splittedStr[4];
-                sc.handleMessage(message);
+                EventBus.getDefault().post(new Object[]{row, col, splittedStr[4], splittedStr[6]});
             } else if (message != null && message.startsWith("done")) {
-                EventBus.getDefault().post(msg + "   bom");
+                String[] splittedStr = message.split(" ");
+                EventBus.getDefault().post("THE WINNER IS " + splittedStr[3]);
+            } else if (message != null && message.startsWith("over")) {
+                String[] splittedStr = message.split(" ");
+                int row = Integer.parseInt(splittedStr[1]);
+                int col = Integer.parseInt(splittedStr[2]);
+                EventBus.getDefault().post(new Object[]{row, col, splittedStr[3], "GAME OVER!!!"});
             }
-            sc.handleMessage(message);
-            System.out.println(message + "hahahahah");
+            System.out.println(message);
         }
     }
 
