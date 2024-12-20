@@ -26,7 +26,7 @@ public class PrimaryController {
 	@FXML
 	void onClickBTN1(ActionEvent event) {
 		try{
-			SimpleClient.getClient().sendToServer("add client");
+			SimpleClient.getClient().sendToServer("client ready");
 			startGameBtn.setVisible(false);
 			searchLabel.setText("Searching...");
 		}catch(Exception e){
